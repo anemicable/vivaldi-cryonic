@@ -28,6 +28,7 @@ let
   };
 
   customIcon = "${config.home.homeDirectory}/Data/Flakes/vivaldi-cryonic/assets/icon.png";  # ← ИЗМЕНИ НА СВОЙ ПУТЬ К ИКОНКЕ
+  profilePath = "${config.home.homeDirectory}/.config/vivaldi-cryonic/personal";
 in
 {
   home.packages = [ pkgs.gocryptfs pkgs.fuse pkgs.sops pkgs.desktop-file-utils ];
@@ -43,20 +44,20 @@ in
     recursive = true;
   };
 
-  # Основной wrapper (исправленный)
+  # Основной wrapper — запускает именно твой существующий профиль
   home.file.".local/bin/vivaldi-cryonic" = {
     executable = true;
     text = ''
       #!/usr/bin/env bash
-      echo "❄️  Launching Vivaldi Cryonic (personal)..."
-      exec ${vivaldiCryonic}/bin/vivaldi --user-data-dir=${mountPath}/personal "$@"
+      echo "❄️  Launching Vivaldi Cryonic (твой уже настроенный профиль)..."
+      exec ${pkgs.vivaldi}/bin/vivaldi --user-data-dir=${profilePath} "$@"
     '';
   };
 
-  # Desktop entry для меню
+  # Иконка в меню приложений
   xdg.desktopEntries.vivaldi-cryonic = {
     name = "Vivaldi Cryonic";
-    comment = "Hardened Vivaldi — encrypted profile";
+    comment = "Hardened Vivaldi — твой профиль";
     exec = "/home/mistflow/.local/bin/vivaldi-cryonic %U";
     icon = customIcon;
     terminal = false;
