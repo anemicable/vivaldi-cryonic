@@ -2,8 +2,9 @@
 { pkgs, config, ... }:
 
 let
-  vaultPath = "${config.home.homeDirectory}/Vaults/vivaldi-cryonic";
-  mountPath = "${config.home.homeDirectory}/.config/vivaldi-cryonic";
+  vaultPath   = "${config.home.homeDirectory}/Vaults/vivaldi-cryonic";
+  mountPath   = "${config.home.homeDirectory}/.config/vivaldi-cryonic";
+  profilePath = "${mountPath}/personal";   # твоя текущая папка
 
   vivaldiCryonic = pkgs.vivaldi.override {
     proprietaryCodecs = true;
@@ -23,49 +24,42 @@ let
       "--connectivity-check-url=0.0.0.0"
       "--password-store=basic"
       "--enable-features=VaapiVideoDecodeLinuxGL,VaapiVideoEncoder,VaapiVideoDecoder"
+      "--webrtc-ip-handling=disable_non_proxied_udp"
+      "--disable-features=WebRTC,InterestCohort,UserAgentClientHint,AutofillServerCommunication,OptimizationHints"
+      "--no-service-autorun"
+      "--disable-reading-from-canvas"  # (если готов потерять пару сайтов)
+      "--disable-3d-apis"              # опционально
+      "--force-webrtc-ip-handling-policy=disable_non_proxied_udp"
+      "--enable-features=StrictOriginIsolation"
       "--force-dark-mode"
     ];
   };
-
-  customIcon = "${config.home.homeDirectory}/Data/Flakes/vivaldi-cryonic/assets/icon.png";  # ← ИЗМЕНИ НА СВОЙ ПУТЬ К ИКОНКЕ
-  profilePath = "${config.home.homeDirectory}/.config/vivaldi-cryonic/personal";
 in
 {
-  home.packages = [ pkgs.gocryptfs pkgs.fuse pkgs.sops pkgs.desktop-file-utils ];
+  home.packages = [ pkgs.gocryptfs pkgs.fuse pkgs.sops ];
 
-  # Полноценный uBlock Origin (unpacked)
-  home.file."${config.xdg.configHome}/vivaldi-cryonic/Extensions/uBlock0.chromium" = {
-    source = pkgs.fetchFromGitHub {
-      owner = "gorhill";
-      repo = "uBlock";
-      rev = "1.71.0";
-      sha256 = "sha256-fdnEofH/R42p1ruYDysACaEYy9+KR7hDDJnkEfAGLD8=";                       # Nix выдаст правильный sha256
-    } + "/dist/build/uBlock0.chromium";
-    recursive = true;
-  };
-
-  # Основной wrapper — запускает именно твой существующий профиль
+  # Wrapper
   home.file.".local/bin/vivaldi-cryonic" = {
     executable = true;
     text = ''
       #!/usr/bin/env bash
-      echo "❄️  Launching Vivaldi Cryonic (твой уже настроенный профиль)..."
-      exec ${pkgs.vivaldi}/bin/vivaldi --user-data-dir=${profilePath} "$@"
+      echo "❄️  Launching Vivaldi Cryonic..."
+      exec ${vivaldiCryonic}/bin/vivaldi --user-data-dir=${profilePath} "$@"
     '';
   };
 
-  # Иконка в меню приложений
+  # Иконка в меню
   xdg.desktopEntries.vivaldi-cryonic = {
     name = "Vivaldi Cryonic";
-    comment = "Hardened Vivaldi — твой профиль";
+    comment = "Hardened Vivaldi";
     exec = "/home/mistflow/.local/bin/vivaldi-cryonic %U";
-    icon = customIcon;
+    icon = "${config.home.homeDirectory}/Data/Flakes/vivaldi-cryonic/assets/icon2.png";
     terminal = false;
     type = "Application";
     categories = [ "Network" "WebBrowser" ];
   };
 
-  # Один gocryptfs vault
+  # gocryptfs
   systemd.user.services.vivaldi-cryonic-mount = {
     Unit = {
       Description = "Mount vivaldi-cryonic gocryptfs vault";
@@ -79,7 +73,7 @@ in
         set -e
         mkdir -p ${vaultPath} ${mountPath}
         if [ ! -f ${vaultPath}/gocryptfs.conf ]; then
-          echo "❄️  First run: initializing gocryptfs vault..."
+          echo "❄️ First run: initializing gocryptfs vault..."
           ${pkgs.gocryptfs}/bin/gocryptfs -init -passfile ${config.sops.secrets."vivaldi-cryonic-passphrase".path} ${vaultPath}
         fi
         ${pkgs.gocryptfs}/bin/gocryptfs -passfile ${config.sops.secrets."vivaldi-cryonic-passphrase".path} ${vaultPath} ${mountPath}
@@ -91,6 +85,6 @@ in
 
   home.activation.cryonicSetup = ''
     echo "❄️  Preparing Vivaldi Cryonic profile..."
-    mkdir -p ${vaultPath} ${mountPath}/personal
+    mkdir -p ${profilePath}
   '';
 }
