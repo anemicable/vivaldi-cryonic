@@ -43,8 +43,20 @@ in
     executable = true;
     text = ''
       #!/usr/bin/env bash
-      echo "❄️  Launching Vivaldi Cryonic..."
-      exec ${vivaldiCryonic}/bin/vivaldi --user-data-dir=${profilePath} "$@"
+      echo "❄️ Launching Vivaldi Cryonic (Firejail sandbox)..."
+
+      exec ${pkgs.firejail}/bin/firejail \
+        --profile=vivaldi \
+        --whitelist=${profilePath} \
+        --whitelist=${config.home.homeDirectory}/Downloads \
+        --whitelist=${config.home.homeDirectory}/Documents \
+        --whitelist=${config.home.homeDirectory}/Pictures \
+        --whitelist=${config.home.homeDirectory}/Videos \
+        --ignore=private-dev \      # важно для VAAPI /dev/dri
+        --ignore=private-etc \      # если нужно больше доступа к /etc
+        --dbus-user.filter \        # дополнительная защита dbus
+        --quiet \
+        ${vivaldiCryonic}/bin/vivaldi --user-data-dir=${profilePath} "$@"
     '';
   };
 
