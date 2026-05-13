@@ -38,33 +38,11 @@ in
 {
   home.packages = [ pkgs.gocryptfs pkgs.fuse pkgs.sops ];
 
-  # Wrapper
-  home.file.".local/bin/vivaldi-cryonic" = {
-    executable = true;
-    text = ''
-      #!/usr/bin/env bash
-      echo "❄️ Launching Vivaldi Cryonic (Firejail sandbox)..."
-
-      exec ${pkgs.firejail}/bin/firejail \
-        --profile=vivaldi \
-        --whitelist=${profilePath} \
-        --whitelist=${config.home.homeDirectory}/Downloads \
-        --whitelist=${config.home.homeDirectory}/Documents \
-        --whitelist=${config.home.homeDirectory}/Pictures \
-        --whitelist=${config.home.homeDirectory}/Videos \
-        --ignore=private-dev \      # важно для VAAPI /dev/dri
-        --ignore=private-etc \      # если нужно больше доступа к /etc
-        --dbus-user.filter \        # дополнительная защита dbus
-        --quiet \
-        ${vivaldiCryonic}/bin/vivaldi --user-data-dir=${profilePath} "$@"
-    '';
-  };
-
   # Иконка в меню
   xdg.desktopEntries.vivaldi-cryonic = {
     name = "Vivaldi Cryonic";
     comment = "Hardened Vivaldi";
-    exec = "/home/mistflow/.local/bin/vivaldi-cryonic %U";
+    exec = "vivaldi-cryonic %U";          # ← просто имя, без полного пути
     icon = "${config.home.homeDirectory}/Data/Flakes/vivaldi-cryonic/assets/icon2.png";
     terminal = false;
     type = "Application";
