@@ -8,7 +8,7 @@
     defaultSopsFile = "${inputs.my-secrets}/secrets-backup.yaml";  # ← работает!
     defaultSopsFormat = "yaml";
 
-    age.keyFile = "/home/твой_username/.config/sops/age/keys.txt";
+    age.keyFile = "/home/mistflow/.config/sops/age/keys.txt";
 
     # Если хочешь, можно указать конкретный секрет здесь
     secrets."vivaldi-cryonic-passphrase" = { };
@@ -29,5 +29,5 @@
   networking.firewall.enable = true;
 
   # Пример: если хочешь firejail для Vivaldi
-  # programs.firejail.enable = true;
+  #programs.firejail.enable = true;
 }

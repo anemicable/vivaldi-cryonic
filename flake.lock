@@ -23,8 +23,8 @@
     "my-secrets": {
       "flake": false,
       "locked": {
-        "lastModified": 1778665580,
-        "narHash": "sha256-LOPDk0A8rsTZts27yly1B+aIng/NVXUqsVpsbgYeQgo=",
+        "lastModified": 1778671618,
+        "narHash": "sha256-44Sl0acbgZG60QlvNPHdmqOYC990mvvJ/BvZWWYVIRM=",
         "path": "/home/mistflow/nixos-config/secrets",
         "type": "path"
       },

@@ -1,90 +1,71 @@
-# home.nix
+# vivaldi-cryonic/home.nix
 { pkgs, config, ... }:
+
 let
-  # Пути к unpacked расширениям (создай папки и скачай туда расширения)
-  ublockPath = "${config.home.homeDirectory}/.config/vivaldi/extensions/uBlock0";
-  canvasBlockerPath = "${config.home.homeDirectory}/.config/vivaldi/extensions/CanvasBlocker";
+  vaultPath = "${config.home.homeDirectory}/Data/Vaults/vivaldi-cryonic";   # ← новый путь
+  mountPath = "${config.home.homeDirectory}/.config/vivaldi-cryonic";
 
-in {
-  home.packages = [ pkgs.vivaldiCryonic ];
+  vivaldiCryonic = pkgs.vivaldi.override {
+    proprietaryCodecs = true;
+    enableWidevine = false;
 
-  # === Автоматическое создание hardened Preferences ===
-  home.activation.cryonicVivaldiPreferences = ''
-    echo "❄️  Applying Vivaldi Cryonic Preferences..."
-    mkdir -p $HOME/.config/vivaldi/Default
-
-    cat > $HOME/.config/vivaldi/Default/Preferences << 'EOF'
+    commandLineArgs = [
+      "--no-first-run"
+      "--disable-background-networking"
+      "--disable-breakpad"
+      "--disable-crash-reporter"
+      "--disable-component-update"
+      "--disable-sync"
+      "--disable-domain-reliability"
+      "--no-pings"
+      "--disable-features=OptimizationGuideModelDownloading,OptimizationHintsFetching,OptimizationHints,MediaEngagementBypassAutoplayPolicies,CrashReporting,GcmRegistration,GoogleCloudMessaging"
+      "--variations-server-url=0.0.0.0"
+      "--connectivity-check-url=0.0.0.0"
+      "--password-store=basic"
+      "--enable-features=VaapiVideoDecodeLinuxGL,VaapiVideoEncoder,VaapiVideoDecoder"
+      "--force-dark-mode"
+    ];
+  };
+in
 {
-  "profile": {
-    "content_settings": {
-      "exceptions": {
-        "cookies": {}
-      }
-    }
-  },
-  "vivaldi": {
-    "tracker_blocker": {
-      "default_level": 2   // 0 = No Blocking, 1 = Block Trackers, 2 = Block Trackers and Ads
-    }
-  },
-  "browser": {
-    "clear_data_on_exit": true
-  },
-  "privacy": {
-    "third_party_cookie_blocking": 2,   // Strict
-    "block_hyperlink_audit": true,
-    "web_rtc_multiple_routes_enabled": false
-  },
-  "safebrowsing": {
-    "enabled": false
-  }
-}
-EOF
-  '';
+  home.packages = [ pkgs.gocryptfs pkgs.sops pkgs.fuse ];
 
-  # === Unpacked extensions ===
-  home.file.".config/vivaldi/extensions/uBlock0" = {
-    source = pkgs.fetchgit {
-      url = "https://github.com/gorhill/uBlock";  # или локальный путь
-      rev = "master";  # лучше зафиксировать ревизию
-      sha256 = "";     # nix-build подскажет
+  # Автоматическое монтирование
+  systemd.user.services.vivaldi-cryonic-mount = {
+    Unit = {
+      Description = "Mount vivaldi-cryonic gocryptfs vault";
+      After = [ "sops-nix.service" "graphical-session.target" ];
+      Requires = [ "sops-nix.service" ];
     };
-    recursive = true;
+    Service = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${pkgs.writeShellScript "mount-vivaldi-cryonic" ''
+        set -e
+        mkdir -p ${vaultPath} ${mountPath}
+        if [ ! -f ${vaultPath}/gocryptfs.conf ]; then
+          echo "❄️  First run: initializing gocryptfs vault..."
+          ${pkgs.gocryptfs}/bin/gocryptfs -init -passfile /run/secrets/vivaldi-cryonic-passphrase ${vaultPath}
+        fi
+        ${pkgs.gocryptfs}/bin/gocryptfs -passfile /run/secrets/vivaldi-cryonic-passphrase ${vaultPath} ${mountPath}
+      ''}";
+      ExecStop = "${pkgs.fuse}/bin/fusermount -u ${mountPath}";
+    };
+    Install.WantedBy = [ "default.target" ];
   };
 
-  home.file.".config/vivaldi/extensions/CanvasBlocker" = {
-    source = pkgs.fetchgit {
-      url = "https://github.com/kkapsner/CanvasBlocker";
-      rev = "master";
-      sha256 = ""; 
-    };
-    recursive = true;
-  };
-
-  # === Wrapper с firejail (рекомендую начать с него) ===
+  # Wrapper
   home.file.".local/bin/vivaldi-cryonic" = {
     executable = true;
     text = ''
       #!/usr/bin/env bash
-      echo "❄️  Launching Vivaldi Cryonic in firejail..."
-      exec ${pkgs.firejail}/bin/firejail \
-        --netfilter \
-        --caps.drop=all \
-        --nonewprivs \
-        --noroot \
-        --seccomp \
-        --private-cache \
-        --private-tmp \
-        --whitelist=$HOME/.config/vivaldi \
-        --whitelist=$HOME/Downloads \
-        ${pkgs.vivaldiCryonic}/bin/vivaldi "$@"
+      echo "❄️  Launching Vivaldi Cryonic (ENCRYPTED PROFILE)..."
+      exec ${vivaldiCryonic}/bin/vivaldi --user-data-dir=${mountPath} "$@"
     '';
   };
 
-  # Альтернатива: bubblewrap (bwrap) — если предпочитаешь его
-  # home.file.".local/bin/vivaldi-cryonic-bwrap" = { ... };
-
-  sops.secrets."vivaldi-cryonic-passphrase" = {
-    path = "${config.xdg.runtimeDir}/secrets/vivaldi-cryonic-passphrase";
-  };
+  home.activation.cryonicSetup = ''
+    echo "❄️  Preparing Vivaldi Cryonic encrypted profile..."
+    mkdir -p ${vaultPath} ${mountPath}
+  '';
 }
