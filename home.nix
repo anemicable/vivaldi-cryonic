@@ -27,69 +27,44 @@ let
     ];
   };
 
-  # Твоя кастомная иконка (замени путь, если нужно)
-  customIcon = "${config.home.homeDirectory}/Data/Flakes/vivaldi-cryonic/assets/icon.png";   # ← ИЗМЕНИ НА СВОЙ ПУТЬ
-
-  makeProfile = name: {
-    wrapper = ''
-      #!/usr/bin/env bash
-      echo "❄️  Launching Vivaldi ${name} (ENCRYPTED)..."
-      exec ${vivaldiCryonic}/bin/vivaldi --user-data-dir=${mountPath}/${name} "$@"
-    '';
-
-    desktop = ''
-      [Desktop Entry]
-      Name=Vivaldi ${name}
-      Comment=Hardened Vivaldi — ${name} profile
-      Exec=/home/mistflow/.local/bin/vivaldi-${name} %U
-      Icon=${customIcon}
-      Terminal=false
-      Type=Application
-      Categories=Network;WebBrowser;
-      StartupWMClass=vivaldi
-    '';
-  };
+  customIcon = "${config.home.homeDirectory}/Data/Flakes/vivaldi-cryonic/assets/icon.png";  # ← ИЗМЕНИ НА СВОЙ ПУТЬ К ИКОНКЕ
 in
 {
-  home.packages = [ pkgs.gocryptfs pkgs.fuse pkgs.sops ];
+  home.packages = [ pkgs.gocryptfs pkgs.fuse pkgs.sops pkgs.desktop-file-utils ];
 
-  # === Полноценный uBlock Origin (unpacked) ===
+  # Полноценный uBlock Origin (unpacked)
   home.file."${config.xdg.configHome}/vivaldi-cryonic/Extensions/uBlock0.chromium" = {
     source = pkgs.fetchFromGitHub {
       owner = "gorhill";
       repo = "uBlock";
       rev = "1.71.0";
-      sha256 = "";                       # Nix выдаст правильный sha256 при первой сборке
+      sha256 = "sha256-fdnEofH/R42p1ruYDysACaEYy9+KR7hDDJnkEfAGLD8=";                       # Nix выдаст правильный sha256
     } + "/dist/build/uBlock0.chromium";
     recursive = true;
   };
 
-  # === Три профиля ===
-  home.file.".local/bin/vivaldi-work" = {
+  # Основной wrapper (исправленный)
+  home.file.".local/bin/vivaldi-cryonic" = {
     executable = true;
-    text = (makeProfile "Work").wrapper;
-  };
-  home.file.".local/share/applications/vivaldi-work.desktop" = {
-    text = (makeProfile "Work").desktop;
+    text = ''
+      #!/usr/bin/env bash
+      echo "❄️  Launching Vivaldi Cryonic (personal)..."
+      exec ${vivaldiCryonic}/bin/vivaldi --user-data-dir=${mountPath}/personal "$@"
+    '';
   };
 
-  home.file.".local/bin/vivaldi-shopping" = {
-    executable = true;
-    text = (makeProfile "Shopping").wrapper;
-  };
-  home.file.".local/share/applications/vivaldi-shopping.desktop" = {
-    text = (makeProfile "Shopping").desktop;
-  };
-
-  home.file.".local/bin/vivaldi-personal" = {
-    executable = true;
-    text = (makeProfile "Personal").wrapper;
-  };
-  home.file.".local/share/applications/vivaldi-personal.desktop" = {
-    text = (makeProfile "Personal").desktop;
+  # Desktop entry для меню
+  xdg.desktopEntries.vivaldi-cryonic = {
+    name = "Vivaldi Cryonic";
+    comment = "Hardened Vivaldi — encrypted profile";
+    exec = "/home/mistflow/.local/bin/vivaldi-cryonic %U";
+    icon = customIcon;
+    terminal = false;
+    type = "Application";
+    categories = [ "Network" "WebBrowser" ];
   };
 
-  # === Один gocryptfs vault на все профили ===
+  # Один gocryptfs vault
   systemd.user.services.vivaldi-cryonic-mount = {
     Unit = {
       Description = "Mount vivaldi-cryonic gocryptfs vault";
@@ -114,7 +89,7 @@ in
   };
 
   home.activation.cryonicSetup = ''
-    echo "❄️  Preparing Vivaldi Cryonic profiles..."
-    mkdir -p ${vaultPath} ${mountPath}/{work,shopping,personal}
+    echo "❄️  Preparing Vivaldi Cryonic profile..."
+    mkdir -p ${vaultPath} ${mountPath}/personal
   '';
 }
