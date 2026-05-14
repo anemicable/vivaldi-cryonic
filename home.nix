@@ -42,7 +42,7 @@ in
   xdg.desktopEntries.vivaldi-cryonic = {
     name = "Vivaldi Cryonic";
     comment = "Hardened Vivaldi";
-    exec = "vivaldi-cryonic %U";          # ← просто имя, без полного пути
+    exec = "vivaldi-cryonic %U";        # ← просто имя, без полного пути
     icon = "${config.home.homeDirectory}/Data/Flakes/vivaldi-cryonic/assets/icon2.png";
     terminal = false;
     type = "Application";
