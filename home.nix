@@ -39,14 +39,16 @@ in
   home.packages = [ pkgs.gocryptfs pkgs.fuse pkgs.sops ];
 
   # Иконка в меню
-  xdg.desktopEntries.vivaldi-cryonic = {
-    name = "Vivaldi Cryonic";
-    comment = "Hardened Vivaldi";
-    exec = "vivaldi-cryonic %U";        # ← просто имя, без полного пути
-    icon = "${config.home.homeDirectory}/Data/Flakes/vivaldi-cryonic/assets/icon2.png";
-    terminal = false;
-    type = "Application";
-    categories = [ "Network" "WebBrowser" ];
+  xdg.desktopEntries = {
+    vivaldi-cryonic = {
+      name = "Vivaldi Cryonic";
+      comment = "Hardened Vivaldi";
+      exec = "vivaldi-cryonic %U";        
+      icon = "${config.home.homeDirectory}/Data/Flakes/vivaldi-cryonic/assets/icon2.png";
+      terminal = false;
+      type = "Application";
+      categories = [ "Network" "WebBrowser" ];
+   };
   };
 
   # gocryptfs

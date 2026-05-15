@@ -13,34 +13,6 @@
         inherit system;
         config.allowUnfree = true;
       };
-
-      vivaldiCryonic = pkgs.vivaldi.override {
-        proprietaryCodecs = true;
-        enableWidevine = false;
-        commandLineArgs = [
-          "--no-first-run"
-          "--disable-background-networking"
-          "--disable-breakpad"
-          "--disable-crash-reporter"
-          "--disable-component-update"
-          "--disable-sync"
-          "--disable-domain-reliability"
-          "--no-pings"
-          "--disable-features=OptimizationGuideModelDownloading,OptimizationHintsFetching,OptimizationHints,MediaEngagementBypassAutoplayPolicies,CrashReporting,GcmRegistration,GoogleCloudMessaging"
-          "--variations-server-url=0.0.0.0"
-          "--connectivity-check-url=0.0.0.0"
-          "--password-store=basic"
-          "--enable-features=VaapiVideoDecodeLinuxGL,VaapiVideoEncoder,VaapiVideoDecoder"
-          "--webrtc-ip-handling=disable_non_proxied_udp"
-          "--disable-features=WebRTC,InterestCohort,UserAgentClientHint,AutofillServerCommunication,OptimizationHints"
-          "--no-service-autorun"
-          "--disable-reading-from-canvas"
-          "--disable-3d-apis"
-          "--force-webrtc-ip-handling-policy=disable_non_proxied_udp"
-          "--enable-features=StrictOriginIsolation"
-          "--force-dark-mode"
-        ];
-      };
     in
     {
       packages.${system} = {
