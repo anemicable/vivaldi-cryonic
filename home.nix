@@ -27,7 +27,7 @@ let
       "--webrtc-ip-handling=disable_non_proxied_udp"
       "--disable-features=WebRTC,InterestCohort,UserAgentClientHint,AutofillServerCommunication,OptimizationHints"
       "--no-service-autorun"
-      "--disable-reading-from-canvas"  # (если готов потерять пару сайтов)
+      #"--disable-reading-from-canvas"  # (если готов потерять пару сайтов)
       "--disable-3d-apis"              # опционально
       "--force-webrtc-ip-handling-policy=disable_non_proxied_udp"
       "--enable-features=StrictOriginIsolation"

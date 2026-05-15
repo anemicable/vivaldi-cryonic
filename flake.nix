@@ -9,7 +9,10 @@
   outputs = { self, nixpkgs, ... }:
     let
       system = "x86_64-linux";
-      pkgs = nixpkgs.legacyPackages.${system};
+      pkgs = import nixpkgs {
+        inherit system;
+        config.allowUnfree = true;
+      };
 
       vivaldiCryonic = pkgs.vivaldi.override {
         proprietaryCodecs = true;
@@ -40,9 +43,10 @@
       };
     in
     {
-      # Пакет теперь доступен из любой конфигурации
-      packages.${system}.default = vivaldiCryonic;
-      packages.${system}.vivaldi-cryonic = vivaldiCryonic;
+      packages.${system} = {
+        default = vivaldiCryonic;
+        vivaldi-cryonic = vivaldiCryonic;
+      };
 
       # Оставляем home-manager модуль как был
       homeModules.default = ./home.nix;
