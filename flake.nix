@@ -1,6 +1,6 @@
 # vivaldi-cryonic/flake.nix
 {
-  description = "vivaldi-cryonic — hardened Vivaldi (cryogenic edition) ❄️";
+  description = "vivaldi-cryonic + vivaldi-stable";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -14,6 +14,7 @@
         config.allowUnfree = true;
       };
 
+      # ==================== Cryonic (приватный / hardened) ====================
       vivaldiCryonic = (pkgs.vivaldi.override {
         proprietaryCodecs = true;
         enableWidevine = false;
@@ -41,21 +42,40 @@
           "--force-dark-mode"
         ];
       }).overrideAttrs (old: {
-        pname = "vivaldi-cryonic";   # ← вот это главное
-        # Можно ещё meta поправить, если хочешь
+        pname = "vivaldi-cryonic";
         meta = old.meta // {
           description = "vivaldi-cryonic — hardened Vivaldi (cryogenic edition) ❄️";
         };
       });
-    
+
+      # ==================== Stable (комфортный / "гражданинский") ====================
+      vivaldiStable = (pkgs.vivaldi.override {
+        proprietaryCodecs = true;
+        enableWidevine = true;
+        commandLineArgs = [
+          "--no-first-run"
+          "--enable-features=VaapiVideoDecodeLinuxGL,VaapiVideoEncoder,VaapiVideoDecoder"
+          "--ignore-gpu-blocklist"
+          "--enable-gpu-rasterization"
+          "--enable-accelerated-2d-canvas"
+          "--force-dark-mode"
+          "--password-store=basic"
+        ];
+      }).overrideAttrs (old: {
+        pname = "vivaldi-stable";
+        meta = old.meta // {
+          description = "vivaldi-stable — comfortable everyday version";
+        };
+      });
+
     in
     {
       packages.${system} = {
         default = vivaldiCryonic;
         vivaldi-cryonic = vivaldiCryonic;
+        vivaldi-stable = vivaldiStable;
       };
 
-      # Оставляем home-manager модуль как был
       homeModules.default = ./home.nix;
     };
 }

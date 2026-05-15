@@ -1,8 +1,16 @@
 # vivaldi-cryonic/home.nix
-{ pkgs, config, ... }:
+{ pkgs, config, inputs, ... }:
 let
-  vaultPath = "${config.home.homeDirectory}/Vaults/vivaldi-cryonic";
-  configPath = "${config.home.homeDirectory}/.config/vivaldi-cryonic";  # ← монтируем сюда
+  # Cryonic (приватный)
+  vaultPathCryonic = "${config.home.homeDirectory}/Vaults/vivaldi-cryonic";
+  configPathCryonic = "${config.home.homeDirectory}/.config/vivaldi-cryonic";
+
+  # Stable (комфортный, но тоже зашифрованный)
+  vaultPathStable = "${config.home.homeDirectory}/Vaults/vivaldi-stable";
+  configPathStable = "${config.home.homeDirectory}/.config/vivaldi-stable";
+
+  vivaldiCryonic = inputs.vivaldi-cryonic.packages.${pkgs.system}.vivaldi-cryonic;
+  vivaldiStable = inputs.vivaldi-cryonic.packages.${pkgs.system}.vivaldi-stable;
 in
 {
   home.packages = [ pkgs.gocryptfs pkgs.fuse pkgs.sops ];
@@ -11,36 +19,10 @@ in
   xdg.desktopEntries = {
     vivaldi-cryonic = {
       name = "Vivaldi Cryonic";
-      comment = "Hardened Vivaldi";
-      exec = "vivaldi-cryonic --user-data-dir=${configPath} %U";
-      icon = "${config.home.homeDirectory}/Data/Flakes/vivaldi-cryonic/assets/icon2.png";
-      terminal = false;
-      type = "Application";
-      categories = [ "Network" "WebBrowser" ];
-    };
-
-    vivaldi-cryonic-personal = {
-      name = "Vivaldi Cryonic (Personal)";
-      comment = "Hardened Vivaldi (Personal)";
-      exec = "vivaldi-cryonic --user-data-dir=${configPath} %U --profile-directory=Personal";
-      icon = "${config.home.homeDirectory}/Data/Flakes/vivaldi-cryonic/assets/icon2.png";
-      terminal = false;
-      type = "Application";
-      categories = [ "Network" "WebBrowser" ];
-    };
-
-    vivaldi-cryonic-work = {
-      name = "Vivaldi Cryonic (Work)";
-      comment = "Hardened Vivaldi — Work profile";
+      comment = "Hardened & Encrypted";
       exec = builtins.concatStringsSep " " [
         "vivaldi-cryonic"
-        "--user-data-dir=${configPath}"
-        "--profile-directory=Work"
-        "--disable-3d-apis=false"
-        "--disable-reading-from-canvas=false"
-        "--enable-accelerated-2d-canvas"
-        "--enable-gpu-rasterization"
-        "--ignore-gpu-blocklist"
+        "--user-data-dir=${configPathCryonic}"
         "%U"
       ];
       icon = "${config.home.homeDirectory}/Data/Flakes/vivaldi-cryonic/assets/icon2.png";
@@ -49,64 +31,125 @@ in
       categories = [ "Network" "WebBrowser" ];
     };
 
-    vivaldi-cryonic-shopping = {
-      name = "Vivaldi Cryonic (Shopping)";
-      comment = "Hardened Vivaldi — Shopping profile";
+    vivaldi-stable = {
+      name = "Vivaldi";
+      comment = "Vivaldi Stable — Main";
       exec = builtins.concatStringsSep " " [
-        "vivaldi-cryonic"
-        "--user-data-dir=${configPath}"
-        "--profile-directory=Work"
-        "--disable-3d-apis=false"
-        "--disable-reading-from-canvas=false"
-        "--enable-accelerated-2d-canvas"
-        "--enable-gpu-rasterization"
-        "--ignore-gpu-blocklist"
+        "${vivaldiStable}/bin/vivaldi"
+        "--user-data-dir=${configPathStable}"
         "%U"
       ];
-      icon = "${config.home.homeDirectory}/Data/Flakes/vivaldi-cryonic/assets/icon-shopping.png";
+      icon = "vivaldi";
+      terminal = false;
+      type = "Application";
+      categories = [ "Network" "WebBrowser" ];
+    };
+
+    vivaldi-stable-old = {
+      name = "Vivaldi (Old)";
+      comment = "Vivaldi Stable — Old";
+      exec = builtins.concatStringsSep " " [
+        "${vivaldiStable}/bin/vivaldi"
+        "--user-data-dir=${configPathStable}"
+        "--profile-directory=Old"
+        "%U"
+      ];
+      icon = "vivaldi";
+      terminal = false;
+      type = "Application";
+      categories = [ "Network" "WebBrowser" ];
+    };
+
+    vivaldi-stable-work = {
+      name = "Vivaldi (Work)";
+      comment = "Vivaldi Stable — Work";
+      exec = builtins.concatStringsSep " " [
+        "${vivaldiStable}/bin/vivaldi"
+        "--user-data-dir=${configPathStable}"
+        "--profile-directory=Work"
+        "%U"
+      ];
+      icon = "vivaldi";
+      terminal = false;
+      type = "Application";
+      categories = [ "Network" "WebBrowser" ];
+    };
+
+    vivaldi-stable-shopping = {
+      name = "Vivaldi (Shopping)";
+      comment = "Vivaldi Stable — Shopping";
+      exec = builtins.concatStringsSep " " [
+        "${vivaldiStable}/bin/vivaldi"
+        "--user-data-dir=${configPathStable}"
+        "--profile-directory=Shopping"
+        "%U"
+      ];
+      icon = "vivaldi";
       terminal = false;
       type = "Application";
       categories = [ "Network" "WebBrowser" ];
     };
   };
 
-  # ==================== gocryptfs Mount ====================
+  # ==================== gocryptfs — Cryonic ====================
   systemd.user.services.vivaldi-cryonic-mount = {
     Unit = {
       Description = "Mount vivaldi-cryonic gocryptfs vault";
       After = [ "sops-nix.service" "graphical-session.target" ];
       Requires = [ "sops-nix.service" ];
     };
-
     Service = {
       Type = "oneshot";
       RemainAfterExit = true;
-
       ExecStart = "${pkgs.writeShellScript "mount-vivaldi-cryonic" ''
         set -e
-        mkdir -p ${vaultPath} ${configPath}
-
-        if [ ! -f ${vaultPath}/gocryptfs.conf ]; then
-          echo "❄️ First run: initializing gocryptfs vault..."
+        mkdir -p ${vaultPathCryonic} ${configPathCryonic}
+        if [ ! -f ${vaultPathCryonic}/gocryptfs.conf ]; then
+          echo "❄️ First run: initializing Cryonic vault..."
           ${pkgs.gocryptfs}/bin/gocryptfs -init \
             -passfile ${config.sops.secrets."vivaldi-cryonic-passphrase".path} \
-            ${vaultPath}
+            ${vaultPathCryonic}
         fi
-
         ${pkgs.gocryptfs}/bin/gocryptfs \
           -passfile ${config.sops.secrets."vivaldi-cryonic-passphrase".path} \
-          ${vaultPath} ${configPath}
+          ${vaultPathCryonic} ${configPathCryonic}
       ''}";
-
-      ExecStop = "${pkgs.fuse}/bin/fusermount -u ${configPath}";
+      ExecStop = "${pkgs.fuse}/bin/fusermount -u ${configPathCryonic}";
     };
-
     Install.WantedBy = [ "default.target" ];
   };
 
-  # Создаём папку на всякий случай (хотя gocryptfs сам создаст)
-  home.activation.cryonicSetup = ''
-    echo "❄️ Preparing Vivaldi Cryonic encrypted config..."
-    mkdir -p ${configPath}
+  # ==================== gocryptfs — Stable ====================
+  systemd.user.services.vivaldi-stable-mount = {
+    Unit = {
+      Description = "Mount vivaldi-stable gocryptfs vault";
+      After = [ "sops-nix.service" "graphical-session.target" ];
+      Requires = [ "sops-nix.service" ];
+    };
+    Service = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${pkgs.writeShellScript "mount-vivaldi-stable" ''
+        set -e
+        mkdir -p ${vaultPathStable} ${configPathStable}
+        if [ ! -f ${vaultPathStable}/gocryptfs.conf ]; then
+          echo "❄️ First run: initializing Stable vault..."
+          ${pkgs.gocryptfs}/bin/gocryptfs -init \
+            -passfile ${config.sops.secrets."vivaldi-stable-passphrase".path} \
+            ${vaultPathStable}
+        fi
+        ${pkgs.gocryptfs}/bin/gocryptfs \
+          -passfile ${config.sops.secrets."vivaldi-stable-passphrase".path} \
+          ${vaultPathStable} ${configPathStable}
+      ''}";
+      ExecStop = "${pkgs.fuse}/bin/fusermount -u ${configPathStable}";
+    };
+    Install.WantedBy = [ "default.target" ];
+  };
+
+  home.activation.setupBrowsers = ''
+    echo "❄️ Preparing Vivaldi directories..."
+    mkdir -p ${configPathCryonic} ${configPathStable}
+    mkdir -p ${configPathStable}/Work ${configPathStable}/Shopping
   '';
 }
