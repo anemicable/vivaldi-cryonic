@@ -32,7 +32,17 @@ in
     vivaldi-cryonic-work = {
       name = "Vivaldi Cryonic (Work)";
       comment = "Hardened Vivaldi — Work profile";
-      exec = "vivaldi-cryonic --user-data-dir=${configPath} --profile-directory=Work %U";
+      exec = builtins.concatStringsSep " " [
+        "vivaldi-cryonic"
+        "--user-data-dir=${configPath}"
+        "--profile-directory=Work"
+        "--disable-3d-apis=false"
+        "--disable-reading-from-canvas=false"
+        "--enable-accelerated-2d-canvas"
+        "--enable-gpu-rasterization"
+        "--ignore-gpu-blocklist"
+        "%U"
+      ];
       icon = "${config.home.homeDirectory}/Data/Flakes/vivaldi-cryonic/assets/icon2.png";
       terminal = false;
       type = "Application";
@@ -42,7 +52,17 @@ in
     vivaldi-cryonic-shopping = {
       name = "Vivaldi Cryonic (Shopping)";
       comment = "Hardened Vivaldi — Shopping profile";
-      exec = "vivaldi-cryonic --user-data-dir=${configPath} --profile-directory=Shopping %U";
+      exec = builtins.concatStringsSep " " [
+        "vivaldi-cryonic"
+        "--user-data-dir=${configPath}"
+        "--profile-directory=Work"
+        "--disable-3d-apis=false"
+        "--disable-reading-from-canvas=false"
+        "--enable-accelerated-2d-canvas"
+        "--enable-gpu-rasterization"
+        "--ignore-gpu-blocklist"
+        "%U"
+      ];
       icon = "${config.home.homeDirectory}/Data/Flakes/vivaldi-cryonic/assets/icon-shopping.png";
       terminal = false;
       type = "Application";
