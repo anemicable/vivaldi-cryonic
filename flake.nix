@@ -14,7 +14,7 @@
         config.allowUnfree = true;
       };
 
-      vivaldiCryonic = pkgs.vivaldi.override {
+      vivaldiCryonic = (pkgs.vivaldi.override {
         proprietaryCodecs = true;
         enableWidevine = false;
         commandLineArgs = [
@@ -40,7 +40,14 @@
           "--enable-features=StrictOriginIsolation"
           "--force-dark-mode"
         ];
-      };
+      }).overrideAttrs (old: {
+        pname = "vivaldi-cryonic";   # ← вот это главное
+        # Можно ещё meta поправить, если хочешь
+        meta = old.meta // {
+          description = "vivaldi-cryonic — hardened Vivaldi (cryogenic edition) ❄️";
+        };
+      });
+    
     in
     {
       packages.${system} = {
