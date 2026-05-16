@@ -35,7 +35,7 @@
           "--webrtc-ip-handling=disable_non_proxied_udp"
           "--disable-features=WebRTC,InterestCohort,UserAgentClientHint,AutofillServerCommunication,OptimizationHints"
           "--no-service-autorun"
-          "--disable-reading-from-canvas"
+          #"--disable-reading-from-canvas"
           "--disable-3d-apis"
           "--force-webrtc-ip-handling-policy=disable_non_proxied_udp"
           "--enable-features=StrictOriginIsolation"
