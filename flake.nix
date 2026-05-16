@@ -35,10 +35,14 @@
           "--webrtc-ip-handling=disable_non_proxied_udp"
           "--disable-features=WebRTC,InterestCohort,UserAgentClientHint,AutofillServerCommunication,OptimizationHints"
           "--no-service-autorun"
-          #"--disable-reading-from-canvas"
           "--disable-3d-apis"
           "--force-webrtc-ip-handling-policy=disable_non_proxied_udp"
+          #"--disable-reading-from-canvas"
+          #"--fingerprinting-canvas-image-data-noise"
+          #"--fingerprinting-canvas-measuretext-noise"
+          #"--fingerprinting-client-rects-noise"
           "--enable-features=StrictOriginIsolation"
+          "--disable-features=OptimizationHints,InterestFeedContentSuggestions"
           "--force-dark-mode"
         ];
       }).overrideAttrs (old: {
